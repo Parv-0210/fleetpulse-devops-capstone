@@ -1,14 +1,14 @@
 #!/bin/sh
 # Container entrypoint for the FleetPulse API.
-#   RUN_MIGRATIONS=true   run `alembic upgrade head` before starting (docker compose / single replica)
+#   RUN_MIGRATIONS=true   apply Alembic migrations before starting (serialized with a
+#                         Postgres advisory lock, see app/migrate.py). docker compose sets
+#                         this; in Kubernetes an init container runs `python -m app.migrate`.
 #   SEED_DEMO_DATA=true   insert demo vehicles when the table is empty
-# In Kubernetes migrations run once per release via a Helm hook Job instead,
-# so the Deployment pods start with RUN_MIGRATIONS=false.
 set -eu
 
 if [ "${RUN_MIGRATIONS:-false}" = "true" ]; then
   echo "[entrypoint] applying database migrations"
-  alembic upgrade head
+  python -m app.migrate
 fi
 
 if [ "${SEED_DEMO_DATA:-false}" = "true" ]; then

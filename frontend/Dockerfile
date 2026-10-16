@@ -10,10 +10,15 @@ RUN npm test && npm run build
 # ---------- Stage 2: serve with an unprivileged nginx ----------
 # nginx-unprivileged runs as uid 101 ("nginx"), listens on 8080 and keeps its
 # pid/cache under /tmp, so no root is needed at runtime.
-FROM nginxinc/nginx-unprivileged:1.27-alpine
+FROM nginxinc/nginx-unprivileged:1.30-alpine-slim
 LABEL org.opencontainers.image.title="fleetpulse-frontend" \
       org.opencontainers.image.description="FleetPulse dashboard served by nginx" \
       org.opencontainers.image.source="https://github.com/Parv-0210/fleetpulse-devops-capstone"
+
+# Pull in Alpine security updates so the Trivy HIGH/CRITICAL gate stays green.
+USER root
+RUN apk upgrade --no-cache
+USER nginx
 
 ENV BACKEND_UPSTREAM=backend:8000
 COPY --chown=nginx:nginx nginx/default.conf.template /etc/nginx/templates/default.conf.template

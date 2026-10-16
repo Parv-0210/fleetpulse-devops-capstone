@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy import text
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from .. import __version__
 from ..config import settings
 from ..db import get_db
+from ..models import Vehicle
 
 router = APIRouter(tags=["system"])
 
@@ -22,6 +23,10 @@ def health():
 
 @router.get("/ready", summary="Readiness probe")
 def ready(db: Session = Depends(get_db)):
-    """Deeper check: a round-trip to the database succeeds, so this pod can take traffic."""
-    db.execute(text("SELECT 1"))
+    """Deeper check: the database answers *and* the schema has been migrated.
+
+    Querying the vehicles table (instead of a bare SELECT 1) keeps a pod out of the
+    Service until the migration init step has finished, so no request can hit a
+    half-initialised replica."""
+    db.execute(select(Vehicle.id).limit(1)).first()
     return {"status": "READY", "database": "ok"}
