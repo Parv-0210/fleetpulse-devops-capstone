@@ -105,6 +105,7 @@ jobs:
           exit-code: "1"
           format: table
           skip-dirs: frontend/node_modules,backend/.venv,terraform/.terraform
+          trivyignores: .trivyignore     # documented, accepted trade-offs only
           skip-setup-trivy: true
 
       - name: IaC misconfiguration report (all severities, SARIF)

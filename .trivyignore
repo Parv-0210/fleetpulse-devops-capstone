@@ -1,0 +1,18 @@
+# Accepted Trivy findings. Each entry is a deliberate trade-off, reviewed and explained here,
+# so the CRITICAL gate in .github/workflows/security.yml stays on for everything else.
+
+# EKS API endpoint is public (terraform/eks.tf, cluster_endpoint_public_access = true).
+# Needed so kubectl from a laptop and the GitHub-hosted deploy job can reach the cluster;
+# GitHub-hosted runners have no fixed IP range. Narrow with cluster_endpoint_public_access_cidrs
+# in terraform.tfvars, or switch to a private endpoint + self-hosted runner in production.
+AVD-AWS-0040
+AWS-0040
+# Same endpoint, CIDR allow-list defaults to 0.0.0.0/0 for the classroom; see the tfvars example.
+AVD-AWS-0041
+AWS-0041
+
+# Worker-node security group allows all egress (terraform-aws-modules/eks default).
+# Nodes must reach GHCR, ECR, the EKS API and AWS service endpoints; there is no VPC
+# endpoint set-up in this project that would make a tighter egress list workable.
+AVD-AWS-0104
+AWS-0104

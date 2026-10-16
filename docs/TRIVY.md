@@ -21,3 +21,18 @@ the packages inside the image at scan time. It does not prove the application co
 SAST, dependency review and runtime controls), and new CVEs are published daily, so the scan is repeated
 on every pipeline run and base images are rebuilt regularly. `ignore-unfixed` intentionally skips CVEs
 that have no vendor patch yet, because failing on them would block every release without a possible fix.
+
+## Repository scans (security workflow)
+
+`.github/workflows/security.yml` also runs Trivy over the repository itself:
+
+- **Secrets** across the full git history. Any hit fails the job.
+- **IaC misconfigurations** in the Dockerfiles, Kubernetes and Helm manifests and Terraform. CRITICAL
+  findings fail the job; every finding is uploaded to the GitHub Security tab.
+
+The first run flagged three CRITICAL Terraform findings: a public EKS API endpoint (AWS-0040), open to
+any address (AWS-0041), and unrestricted egress from the worker nodes (AWS-0104). They are deliberate:
+the endpoint has to be reachable by `kubectl` and by GitHub-hosted runners, which have no fixed IPs, and
+nodes need outbound access to pull images. They are listed with reasons in `.trivyignore`, so the gate
+stays strict for anything new. For production, narrow `cluster_endpoint_public_access_cidrs` or move to a
+private endpoint with a self-hosted runner.
