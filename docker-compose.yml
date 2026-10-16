@@ -1,0 +1,54 @@
+# FleetPulse local stack: PostgreSQL + FastAPI backend + nginx-served React frontend.
+#   docker compose up --build      -> http://localhost:3000 (UI), http://localhost:8000/docs (API)
+#   docker compose down -v         -> stop and delete the database volume
+name: fleetpulse
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: fleetpulse-postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-fleetpulse}
+      POSTGRES_USER: ${POSTGRES_USER:-fleetpulse}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fleetpulse}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-fleetpulse} -d ${POSTGRES_DB:-fleetpulse}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build: ./backend
+    image: fleetpulse-backend:local
+    container_name: fleetpulse-backend
+    environment:
+      APP_ENV: compose
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-fleetpulse}:${POSTGRES_PASSWORD:-fleetpulse}@postgres:5432/${POSTGRES_DB:-fleetpulse}
+      RUN_MIGRATIONS: "true"
+      SEED_DEMO_DATA: ${SEED_DEMO_DATA:-true}
+      CORS_ORIGINS: http://localhost:3000,http://localhost:5173
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  frontend:
+    build: ./frontend
+    image: fleetpulse-frontend:local
+    container_name: fleetpulse-frontend
+    environment:
+      BACKEND_UPSTREAM: backend:8000
+    depends_on:
+      - backend
+    ports:
+      - "3000:8080"
+    restart: unless-stopped
+
+volumes:
+  postgres-data:
