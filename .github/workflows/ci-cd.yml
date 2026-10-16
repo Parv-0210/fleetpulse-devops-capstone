@@ -285,6 +285,65 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
+  kind-smoke:
+    name: Deploy · ephemeral kind cluster + smoke test
+    # Every push to main gets a real Kubernetes deployment inside CI: the Helm chart is installed on a
+    # throw-away kind cluster with the images that were just pushed, helm test runs, and the API is curled.
+    needs: build-scan-push
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: helm/kind-action@v1
+        with:
+          cluster_name: fleetpulse-ci
+          wait: 120s
+
+      - name: Install the chart with this commit's images
+        run: |
+          OWNER="$(echo "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')"
+          kubectl apply -f k8s/namespace.yaml
+          helm upgrade --install fleetpulse ./helm/fleetpulse -n fleetpulse \
+            --set image.owner="$OWNER" \
+            --set backend.tag="${{ github.sha }}" --set frontend.tag="${{ github.sha }}" \
+            --set backend.seedDemoData=true \
+            --set ingress.enabled=false \
+            --set monitoring.serviceMonitor.enabled=false --set monitoring.grafanaDashboard.enabled=false \
+            --set postgres.storage.size=1Gi \
+            --wait --timeout 8m
+
+      - name: Cluster state
+        if: always()
+        run: |
+          kubectl get pods,svc,hpa,pdb -n fleetpulse -o wide
+          kubectl get deploy -n fleetpulse -o custom-columns='NAME:.metadata.name,READY:.status.readyReplicas,IMAGE:.spec.template.spec.containers[0].image'
+
+      - name: helm test
+        run: helm test fleetpulse -n fleetpulse --logs
+
+      - name: Smoke test the API through the Service
+        run: |
+          kubectl port-forward svc/fleetpulse-backend 8000:8000 -n fleetpulse >/dev/null 2>&1 &
+          kubectl port-forward svc/fleetpulse-frontend 3000:80 -n fleetpulse >/dev/null 2>&1 &
+          sleep 4
+          curl -fsS http://localhost:8000/health
+          curl -fsS http://localhost:8000/ready
+          curl -fsS http://localhost:8000/api/fleet/stats | tee /dev/stderr | grep -q '"total_vehicles"'
+          curl -fsS http://localhost:3000/ | grep -q '<title>FleetPulse'
+          curl -fsS http://localhost:8000/metrics | grep -E '^fleetpulse_vehicles\{' | tee /dev/stderr
+          echo "smoke test passed"
+
+      - name: Pod logs on failure
+        if: failure()
+        run: |
+          kubectl describe pods -n fleetpulse | tail -80
+          kubectl logs -n fleetpulse -l app.kubernetes.io/component=backend --all-containers --tail=50
+
   deploy:
     name: Deploy · helm upgrade --install on EKS
     # Runs only for pushes to main and only once the repository variable DEPLOY_ENABLED is "true"

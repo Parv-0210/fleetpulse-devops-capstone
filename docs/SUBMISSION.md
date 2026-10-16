@@ -44,12 +44,13 @@ Screenshots live in `docs/screenshots/` (file names below).
 
 | Criterion | Evidence |
 |---|---|
-| Workflow file | `.github/workflows/ci-cd.yml` |
+| Workflow file | `.github/workflows/ci-cd.yml` (7 jobs) and `.github/workflows/security.yml` (6 jobs: CodeQL ×2, pip-audit, npm audit, secrets + IaC) |
 | Triggers on push to `main` | `on.push.branches: [main]` (plus PRs and manual dispatch) |
 | pytest job fails the build | job `backend-test` is a `needs:` of `build-scan-push`; a failing test stops image builds |
 | Frontend built in pipeline | job `frontend-build` (`npm test`, `npm run build`, artifact `frontend-dist`) |
 | Both images built | job `build-scan-push` matrix `[backend, frontend]` with buildx |
-| Pushed to GHCR | `docker/login-action` + `docker/build-push-action` → `ghcr.io/parv-0210/fleetpulse-*` |
+| Pushed to GHCR | `docker/login-action` + `docker/build-push-action` (multi-arch) → `ghcr.io/parv-0210/fleetpulse-*` |
+| Deployment verified in CI | job `kind-smoke`: Helm install on a kind cluster with the pushed SHA images, `helm test`, curl `/health`, `/ready`, `/api/fleet/stats`, `/metrics` |
 | SHA-based tags | `docker/metadata-action` tags `type=sha,format=long` and `sha-<short>`; never `latest` — `screenshots/07-actions-green.png`, `08-ghcr-tags.png` |
 
 ## M6 — DevSecOps (5)
@@ -59,6 +60,7 @@ Screenshots live in `docs/screenshots/` (file names below).
 | Trivy on both images | `aquasecurity/trivy-action` step per matrix component, before the push step |
 | Fails on HIGH/CRITICAL | `severity: HIGH,CRITICAL`, `exit-code: "1"`, `ignore-unfixed: true` |
 | Explanation | `docs/TRIVY.md` — `screenshots/09-trivy.png` |
+| Beyond the rubric | `security.yml`: CodeQL SAST, pip-audit and npm audit SCA, Trivy secret scan of full git history, Trivy IaC misconfiguration scan (CRITICAL blocks) |
 
 ## M7 — Terraform (15)
 

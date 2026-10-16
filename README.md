@@ -33,11 +33,13 @@ GitHub Actions
   ├── backend:  ruff, pytest against PostgreSQL, Alembic upgrade/downgrade check
   ├── frontend: unit tests, Vite build
   ├── infra:    helm lint, terraform validate
+  ├── security: CodeQL (SAST), pip-audit + npm audit (SCA), secret scan, IaC misconfig scan
   │
-  ├── build both Docker images
+  ├── build both Docker images (amd64 + arm64)
   ├── Trivy scan (any fixable HIGH or CRITICAL CVE stops the pipeline here)
   ├── push to ghcr.io/parv-0210/fleetpulse-{backend,frontend}:<commit sha>
   │
+  ├── deploy to a throw-away kind cluster inside CI, helm test, curl the API
   └── helm upgrade --install on EKS
         ├── Ingress:  /  → React app (nginx)    /api → FastAPI
         ├── 2+ replicas each, HPA on the backend, PodDisruptionBudgets
@@ -56,7 +58,7 @@ the exact commit that produced it.
 | Database | PostgreSQL 16 |
 | Tests | pytest (19 tests), ruff, Node's built-in test runner for the frontend helpers |
 | Containers | Multi-stage Dockerfiles, both images run as non-root users |
-| CI/CD | GitHub Actions, GitHub Container Registry, Trivy |
+| CI/CD | GitHub Actions (two workflows, 13 jobs), GitHub Container Registry, Trivy, CodeQL, pip-audit, npm audit |
 | Infrastructure | Terraform: a VPC with public and private subnets, an EKS cluster with a managed node group |
 | Kubernetes | A Helm chart with Deployments, Services, Ingress, HPA, PDBs and a Helm test |
 | Monitoring | kube-prometheus-stack, with a Grafana dashboard that ships inside the chart |
