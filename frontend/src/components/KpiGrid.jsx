@@ -1,4 +1,4 @@
-import { formatKm, formatMoney } from "../lib/service.js";
+import { formatMoney } from "../lib/service.js";
 
 function Kpi({ label, value, hint, tone }) {
   return (
@@ -31,7 +31,7 @@ export default function KpiGrid({ stats, loading }) {
         tone={stats.overdue ? "danger" : attention ? "warn" : "ok"}
       />
       <Kpi label="Healthy" value={stats.ok} hint="within service interval" tone="ok" />
-      <Kpi label="Distance tracked" value={formatKm(stats.total_odometer_km)} hint="sum of odometers" />
+      <Kpi label="Distance tracked" value={(stats.total_odometer_km || 0).toLocaleString("en-IN")} hint="km · sum of odometers" />
       <Kpi label="Spend · 30 days" value={formatMoney(stats.maintenance_cost_30d)} hint={`${stats.service_records_total} services logged`} />
     </section>
   );
