@@ -51,7 +51,7 @@ Screenshots live in `docs/screenshots/` (file names below).
 | Both images built | job `build-scan-push` matrix `[backend, frontend]` with buildx |
 | Pushed to GHCR | `docker/login-action` + `docker/build-push-action` (multi-arch) → `ghcr.io/parv-0210/fleetpulse-*` |
 | Deployment verified in CI | job `kind-smoke`: Helm install on a kind cluster with the pushed SHA images, `helm test`, curl `/health`, `/ready`, `/api/fleet/stats`, `/metrics` |
-| SHA-based tags | `docker/metadata-action` tags `type=sha,format=long` and `sha-<short>`; never `latest` — `screenshots/07-actions-green.png`, `08-ghcr-tags.png` |
+| SHA-based tags | `docker/metadata-action` tags `type=sha,format=long` and `sha-<short>`; never `latest` — `screenshots/07-actions-green.png`; tags visible on the GHCR package pages |
 
 ## M6 — DevSecOps (5)
 
@@ -68,10 +68,10 @@ Screenshots live in `docs/screenshots/` (file names below).
 |---|---|
 | `terraform/` valid HCL | `versions.tf`, `providers.tf`, `variables.tf`, `vpc.tf`, `eks.tf`, `outputs.tf` |
 | `terraform init` | pinned modules vpc 5.21 / eks 20.37 / iam 5.60 resolve cleanly |
-| `terraform plan` non-empty | `screenshots/10-terraform-plan.png` |
-| VPC with ≥ 2 public subnets | `vpc.tf`: 2 AZs × (public + private), NAT, ELB tags — `screenshots/11-aws-vpc.png` |
-| EKS with ≥ 1 node group | `eks.tf`: managed node group `general` (t3.medium ×2) — `screenshots/12-aws-eks.png` |
-| `terraform destroy` clean | `screenshots/13-terraform-destroy.png` |
+| `terraform plan` non-empty | pending: plan screenshot needs an AWS account without the organisation deny policy |
+| VPC with ≥ 2 public subnets | `vpc.tf`: 2 AZs × (public + private), NAT, ELB tags — pending: VPC console screenshot needs an AWS account without the organisation deny policy |
+| EKS with ≥ 1 node group | `eks.tf`: managed node group `general` (t3.medium ×2) — pending: EKS console screenshot needs an AWS account without the organisation deny policy |
+| `terraform destroy` clean | pending: destroy screenshot needs an AWS account without the organisation deny policy |
 | `terraform.tfvars.example`, no secrets | present; `terraform.tfvars` and `backend.tf` are git-ignored |
 
 ## M8 — Kubernetes + Helm (15)
@@ -100,4 +100,4 @@ Screenshots live in `docs/screenshots/` (file names below).
 | Criterion | Evidence |
 |---|---|
 | Root `README.md` | present |
-| Live demo | `docs/DEMO.md` script: commit → pipeline → new image tag → rollout |
+| Live demo | `scripts/demo.sh`: commit → pipeline → new image tag → rollout |

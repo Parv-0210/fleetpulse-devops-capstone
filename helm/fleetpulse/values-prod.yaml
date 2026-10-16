@@ -3,7 +3,6 @@
 #     -f helm/fleetpulse/values-prod.yaml --set backend.tag=$SHA --set frontend.tag=$SHA
 image:
   pullPolicy: IfNotPresent
-  # pullSecrets: [{ name: ghcr-pull }]   # only if the GHCR packages are private (see k8s/bootstrap/ghcr-pull-secret.sh)
 
 backend:
   replicaCount: 2

@@ -3,7 +3,7 @@ import { api } from "./api.js";
 import { sortByUrgency } from "./lib/service.js";
 import Sidebar from "./components/Sidebar.jsx";
 import KpiGrid from "./components/KpiGrid.jsx";
-import VehicleCard from "./components/VehicleCard.jsx";
+import VehicleTable from "./components/VehicleTable.jsx";
 import VehicleModal from "./components/VehicleModal.jsx";
 import ServiceDrawer from "./components/ServiceDrawer.jsx";
 import Toast from "./components/Toast.jsx";
@@ -77,14 +77,6 @@ export default function App() {
     }
   }
 
-  async function handleQuickOdometer(vehicle, delta) {
-    try {
-      await api.updateVehicle(vehicle.id, { odometer_km: vehicle.odometer_km + delta });
-      await load();
-    } catch (err) {
-      notify(err.message, "danger");
-    }
-  }
 
   return (
     <div className="shell">
@@ -93,15 +85,15 @@ export default function App() {
       <main className="content">
         <header className="topbar">
           <div>
-            <p className="eyebrow">Fleet overview</p>
+            <p className="breadcrumb">Fleet / Overview</p>
             <h1>Maintenance dashboard</h1>
           </div>
           <div className="topbar-actions">
             <span className={`pill ${error ? "pill-danger" : "pill-ok"}`}>
-              <span className="dot" /> {error ? "Backend offline" : "Backend online"}
+              <span className="dot" /> {error ? "API offline" : "API online"}
             </span>
             <button className="btn btn-primary" onClick={() => setModal({ mode: "create" })}>
-              + Register vehicle
+              Add vehicle
             </button>
           </div>
         </header>
@@ -138,9 +130,9 @@ export default function App() {
         )}
 
         {loading ? (
-          <div className="grid">
-            {Array.from({ length: 6 }).map((_, i) => (
-              <div className="card skeleton" key={i} />
+          <div className="table-card">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div className="skeleton-row" key={i} />
             ))}
           </div>
         ) : visible.length === 0 ? (
@@ -152,18 +144,12 @@ export default function App() {
             </button>
           </div>
         ) : (
-          <div className="grid">
-            {visible.map((v) => (
-              <VehicleCard
-                key={v.id}
-                vehicle={v}
-                onEdit={() => setModal({ mode: "edit", vehicle: v })}
-                onDelete={() => handleDelete(v)}
-                onHistory={() => setDrawerVehicle(v)}
-                onOdometer={(delta) => handleQuickOdometer(v, delta)}
-              />
-            ))}
-          </div>
+          <VehicleTable
+            vehicles={visible}
+            onEdit={(v) => setModal({ mode: "edit", vehicle: v })}
+            onDelete={handleDelete}
+            onHistory={(v) => setDrawerVehicle(v)}
+          />
         )}
       </main>
 

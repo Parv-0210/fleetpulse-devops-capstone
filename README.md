@@ -213,7 +213,6 @@ Images in GHCR are tagged with the commit SHA.
 
 ![actions](docs/screenshots/07-actions-green.png)
 
-![ghcr](docs/screenshots/08-ghcr-tags.png)
 
 ### M6 · Trivy
 
@@ -251,8 +250,8 @@ dashboard that the Helm chart installs.
 
 ### M10 · Live demo
 
-The recorded walkthrough (commit → pipeline → new image → cluster rollout) is linked in
-[docs/DEMO.md](docs/DEMO.md).
+`./scripts/demo.sh` runs the live demo end to end: it commits a visible UI change, pushes it, waits
+for the pipeline to publish the new SHA-tagged images, and rolls the cluster onto them.
 
 ## Repository layout
 
@@ -267,13 +266,11 @@ helm/fleetpulse/    Helm chart, including the Grafana dashboard
 monitoring/         Prometheus and Grafana settings and install script
 troubleshooting/    Two deliberately broken manifests for practising debugging
 scripts/            Load test, deploy and minikube helpers
-docs/               Plan, grading checklist, demo script, Trivy notes, screenshots
+docs/               Grading checklist, Trivy notes, screenshots
 ```
 
 ## More documentation
 
-- [docs/PLAN.md](docs/PLAN.md) is how I planned the project before building it.
 - [docs/SUBMISSION.md](docs/SUBMISSION.md) maps every grading criterion to the file or screenshot that covers it.
-- [docs/DEMO.md](docs/DEMO.md) is the script for the live demo.
 - [docs/TRIVY.md](docs/TRIVY.md) explains what the security scan checks and what I fixed.
 - [troubleshooting/README.md](troubleshooting/README.md) covers the debugging exercises.

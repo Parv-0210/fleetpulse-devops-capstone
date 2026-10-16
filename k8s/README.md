@@ -7,9 +7,8 @@ then deploy the application with Helm (`helm/fleetpulse`).
 |---|---|---|
 | `namespace.yaml` | all clusters | `fleetpulse` namespace with Pod Security Admission labels |
 | `storageclass-gp3.yaml` | EKS only | default gp3 StorageClass backed by the EBS CSI add-on |
+| `local/ingress-localhost.yaml` | minikube only | extra Ingress rule so `localhost` works through a port-forward on macOS |
 | `bootstrap/ingress-nginx.sh` | EKS / generic | NGINX Ingress Controller exposed through an AWS NLB |
-| `bootstrap/metrics-server.sh` | generic | Metrics Server for HPA (EKS add-on and minikube addon already provide it) |
-| `bootstrap/ghcr-pull-secret.sh` | any | pull secret if the GHCR packages are private |
 
 ## minikube (local)
 
