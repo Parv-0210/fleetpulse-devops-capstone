@@ -1,0 +1,21 @@
+# Copy to terraform.tfvars and adjust. terraform.tfvars is git-ignored.
+# Credentials are NEVER placed here: use `aws configure`, an AWS profile
+# (AWS_PROFILE=...), or environment variables (AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY).
+
+aws_region   = "ap-south-1"
+project_name = "fleetpulse"
+environment  = "dev"
+
+vpc_cidr           = "10.40.0.0/16"
+az_count           = 2
+single_nat_gateway = true
+
+cluster_version = "1.31"
+# Narrow this to your public IP for anything beyond a classroom demo, e.g. ["203.0.113.10/32"]
+cluster_endpoint_public_access_cidrs = ["0.0.0.0/0"]
+
+node_instance_types     = ["t3.medium"]
+node_group_min_size     = 2
+node_group_max_size     = 3
+node_group_desired_size = 2
+node_disk_size_gb       = 20

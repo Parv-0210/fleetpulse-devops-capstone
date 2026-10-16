@@ -1,0 +1,10 @@
+# Optional remote state. Copy to backend.tf, create the bucket + table first, then `terraform init -migrate-state`.
+terraform {
+  backend "s3" {
+    bucket         = "fleetpulse-terraform-state-CHANGE-ME"
+    key            = "eks/dev/terraform.tfstate"
+    region         = "ap-south-1"
+    dynamodb_table = "fleetpulse-terraform-locks"
+    encrypt        = true
+  }
+}
