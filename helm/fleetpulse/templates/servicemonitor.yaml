@@ -1,4 +1,7 @@
-{{- if .Values.monitoring.serviceMonitor.enabled }}
+{{- /* Rendered only when enabled AND the Prometheus Operator CRDs exist in the cluster, so the chart
+       installs cleanly before monitoring is set up. Re-run `helm upgrade` after installing
+       kube-prometheus-stack and the ServiceMonitor appears. */ -}}
+{{- if and .Values.monitoring.serviceMonitor.enabled (.Capabilities.APIVersions.Has "monitoring.coreos.com/v1/ServiceMonitor") }}
 # Tells the Prometheus Operator (kube-prometheus-stack) to scrape the backend's /metrics.
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
