@@ -39,8 +39,18 @@ grafana:
       defaultDatasourceEnabled: true
       uid: prometheus                    # referenced by helm/fleetpulse/dashboards/fleetpulse.json
   resources:
-    requests: { cpu: 50m, memory: 128Mi }
-    limits: { cpu: 300m, memory: 256Mi }
+    requests: { cpu: 100m, memory: 256Mi }
+    limits: { cpu: 1000m, memory: 512Mi }
+  # Grafana initialises many plugins at start-up; give it time before liveness kicks in.
+  livenessProbe:
+    httpGet: { path: /api/health, port: 3000 }
+    initialDelaySeconds: 120
+    periodSeconds: 20
+    failureThreshold: 10
+  readinessProbe:
+    httpGet: { path: /api/health, port: 3000 }
+    periodSeconds: 10
+    failureThreshold: 30
 
 alertmanager:
   enabled: false                         # out of scope for the capstone; keeps the footprint small

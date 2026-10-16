@@ -13,9 +13,15 @@ spec:
   securityContext:
     runAsNonRoot: true
     runAsUser: 100
+    seccompProfile:
+      type: RuntimeDefault
   containers:
     - name: curl
       image: curlimages/curl:8.12.1
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop: ["ALL"]
       command: ["sh", "-c"]
       args:
         - |
