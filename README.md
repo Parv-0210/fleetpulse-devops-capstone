@@ -19,6 +19,9 @@ vehicles that need attention first, along with how much was spent on maintenance
 
 ![FleetPulse dashboard](docs/screenshots/01-app-desktop.png)
 
+**Running on AWS:** EKS 1.36 in ap-south-1, deployed by the pipeline on every push to `main`.
+The app is served through an AWS Network Load Balancer created by the Ingress controller.
+
 The app itself is intentionally modest. Most of the work in this repo is the path around it: tests,
 containers, a CI/CD pipeline with a security gate, AWS infrastructure written in Terraform, a Helm chart
 for Kubernetes, and monitoring with Prometheus and Grafana.
@@ -188,8 +191,9 @@ make k8s-status
 
 ## Evidence by grading module
 
-Everything below was captured from this repository running on my laptop (Docker Compose and a
-minikube cluster) and from the public GitHub pages of this project.
+M1–M4 were captured on my laptop with Docker Compose. Everything from M7 on was captured from the real
+AWS deployment: an EKS 1.36 cluster in ap-south-1 created by the Terraform in this repo and deployed to by
+the pipeline over GitHub OIDC.
 
 ### M1 · Application
 
@@ -230,17 +234,24 @@ See [docs/TRIVY.md](docs/TRIVY.md) for what was found before the images were har
 
 ### M7 · Terraform
 
-`terraform init`, `fmt` and `validate` pass locally and in CI. The plan/apply/destroy and AWS console
-screenshots are pending: the AWS account I have access to has an organisation policy that denies EC2 and
-EKS in every region, so they will be added as soon as an account without that restriction is available.
+`terraform plan` (72 resources) and `terraform apply` against my AWS account, then the result in the
+AWS console and from the AWS CLI: the VPC `10.40.0.0/16`, two public and two private subnets across
+two availability zones, and the EKS cluster `fleetpulse-dev-eks` (1.36, ACTIVE) with its `t3.medium`
+node group.
+
+![terraform plan](docs/screenshots/10-terraform-plan.png)
+
+![AWS console: VPC](docs/screenshots/11-aws-vpc.png)
+
+![AWS CLI: VPC, subnets, EKS, node group](docs/screenshots/11-aws-vpc-eks-cli.png)
 
 ### M8 · Kubernetes and Helm
 
-| Pods, HPA and PDBs | Services and Ingress |
+| EKS nodes, pods and HPA | Services and Ingress (AWS NLB address) |
 |---|---|
 | ![pods](docs/screenshots/14-kubectl-pods.png) | ![svc](docs/screenshots/15-kubectl-svc.png) |
 
-| Helm release and `helm test` | App served through the Ingress controller |
+| Helm releases on EKS and `helm test` | App served through the Ingress on the AWS load balancer |
 |---|---|
 | ![helm](docs/screenshots/16-helm-list.png) | ![ingress](docs/screenshots/17-ingress-browser.png) |
 

@@ -69,9 +69,9 @@ Screenshots live in `docs/screenshots/` (file names below).
 | `terraform/` valid HCL | `versions.tf`, `providers.tf`, `variables.tf`, `vpc.tf`, `eks.tf`, `outputs.tf` |
 | `terraform init` | pinned modules vpc 5.21 / eks 20.37 / iam 5.60 resolve cleanly |
 | `terraform plan` non-empty | `Plan: 72 to add` — `screenshots/10-terraform-plan.png` |
-| VPC with ≥ 2 public subnets | `vpc.tf`: 2 AZs × (public + private), NAT, ELB tags — pending: VPC console screenshot needs an AWS account without the organisation deny policy |
-| EKS with ≥ 1 node group | `eks.tf`: EKS 1.36, managed node group `general` (t3.medium ×2), metrics-server port rule, OIDC deploy role (`github-oidc.tf`) — pending: EKS console screenshot needs an AWS account without the organisation deny policy |
-| `terraform destroy` clean | pending: destroy screenshot needs an AWS account without the organisation deny policy |
+| VPC with ≥ 2 public subnets | `vpc.tf`: 2 AZs × (public + private), NAT, ELB tags — `screenshots/11-aws-vpc.png`, `11-aws-vpc-eks-cli.png` |
+| EKS with ≥ 1 node group | `eks.tf`: EKS 1.36 ACTIVE, managed node group (t3.medium ×2) ACTIVE, OIDC deploy role — `screenshots/11-aws-vpc-eks-cli.png`, `14-kubectl-pods.png` |
+| `terraform destroy` clean | `scripts/aws-down.sh` — screenshot `13-terraform-destroy.png` added after grading, when the cluster is torn down |
 | `terraform.tfvars.example`, no secrets | present; `terraform.tfvars` and `backend.tf` are git-ignored |
 
 ## M8 — Kubernetes + Helm (15)
@@ -80,7 +80,7 @@ Screenshots live in `docs/screenshots/` (file names below).
 |---|---|
 | `k8s/namespace.yaml` | present, with Pod Security labels |
 | Helm chart | `helm/fleetpulse/{Chart.yaml,values.yaml,templates/}` (+ `values-dev.yaml`, `values-prod.yaml`) |
-| `helm upgrade --install` works | `./scripts/deploy.sh`; `helm test fleetpulse -n fleetpulse` passes |
+| `helm upgrade --install` works | pipeline job "Deploy · helm upgrade --install on EKS" (OIDC, SHA tags), `helm test` passes — `screenshots/16-helm-list.png` |
 | 2 replicas each | `backend.replicaCount: 2`, `frontend.replicaCount: 2` — `screenshots/14-kubectl-pods.png` |
 | ClusterIP Services | `templates/backend-service.yaml`, `frontend-service.yaml` — `screenshots/15-kubectl-svc.png` |
 | Ingress `/` → frontend, `/api` → backend | `templates/ingress.yaml` — `screenshots/17-ingress-browser.png` |
