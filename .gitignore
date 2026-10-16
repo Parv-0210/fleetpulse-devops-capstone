@@ -1,0 +1,46 @@
+# Secrets and local config
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+kubeconfig*
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.coverage
+coverage.xml
+htmlcov/
+*.egg-info/
+test.db
+
+# Node / frontend
+node_modules/
+dist/
+npm-debug.log*
+
+# Terraform
+.terraform/
+.terraform.lock.hcl
+*.tfstate
+*.tfstate.*
+*.tfplan
+terraform.tfvars
+crash.log
+
+# Helm / k8s
+*.tgz
+charts/*/charts/
+
+# Tooling and OS
+.idea/
+.vscode/
+.DS_Store
+*.log
+trivy-results*.sarif
+sbom-*.json
