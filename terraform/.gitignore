@@ -6,3 +6,5 @@ terraform.tfvars
 backend.tf
 crash.log
 plan.txt
+apply.log
+tfplan

@@ -68,7 +68,7 @@ Screenshots live in `docs/screenshots/` (file names below).
 |---|---|
 | `terraform/` valid HCL | `versions.tf`, `providers.tf`, `variables.tf`, `vpc.tf`, `eks.tf`, `outputs.tf` |
 | `terraform init` | pinned modules vpc 5.21 / eks 20.37 / iam 5.60 resolve cleanly |
-| `terraform plan` non-empty | pending: plan screenshot needs an AWS account without the organisation deny policy |
+| `terraform plan` non-empty | `Plan: 72 to add` — `screenshots/10-terraform-plan.png` |
 | VPC with ≥ 2 public subnets | `vpc.tf`: 2 AZs × (public + private), NAT, ELB tags — pending: VPC console screenshot needs an AWS account without the organisation deny policy |
 | EKS with ≥ 1 node group | `eks.tf`: EKS 1.36, managed node group `general` (t3.medium ×2), metrics-server port rule, OIDC deploy role (`github-oidc.tf`) — pending: EKS console screenshot needs an AWS account without the organisation deny policy |
 | `terraform destroy` clean | pending: destroy screenshot needs an AWS account without the organisation deny policy |
