@@ -208,7 +208,7 @@ jobs:
 
       # Security gate: any fixable HIGH/CRITICAL CVE fails the job, so the image is never pushed.
       - name: Trivy vulnerability scan (gate)
-        uses: aquasecurity/trivy-action@0.36.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ steps.repo.outputs.image }}:${{ github.sha }}
           format: table
@@ -219,7 +219,7 @@ jobs:
 
       - name: Trivy report (SARIF for the Security tab)
         if: always()
-        uses: aquasecurity/trivy-action@0.36.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ steps.repo.outputs.image }}:${{ github.sha }}
           format: sarif
@@ -239,7 +239,7 @@ jobs:
           category: trivy-${{ matrix.component }}
 
       - name: Generate SBOM (CycloneDX)
-        uses: aquasecurity/trivy-action@0.36.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ steps.repo.outputs.image }}:${{ github.sha }}
           format: cyclonedx
