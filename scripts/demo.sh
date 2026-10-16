@@ -4,6 +4,7 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 export PATH="/opt/homebrew/bin:$PATH"
+export GIT_PAGER=cat PAGER=cat GH_PAGER=cat
 APP_URL="${APP_URL:-http://localhost:18080}"
 say() { printf '\n\033[1;36m# %s\033[0m\n' "$*"; sleep "${PAUSE:-3}"; }
 run() { printf '\033[1;33m$ %s\033[0m\n' "$*"; eval "$@"; }
