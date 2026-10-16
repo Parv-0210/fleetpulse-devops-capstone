@@ -1,0 +1,33 @@
+# Local convenience only (minikube on macOS, where the docker driver needs `minikube tunnel` + sudo for
+# the cluster IP). With `kubectl port-forward -n ingress-nginx svc/ingress-nginx-controller 18080:80`
+# this extra rule lets http://localhost:18080 reach the app through the real Ingress controller.
+# Same routing as the chart's Ingress: /api (and docs/metrics) -> backend, / -> frontend.
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: fleetpulse-localhost
+  namespace: fleetpulse
+  labels:
+    app.kubernetes.io/part-of: fleetpulse
+    purpose: local-demo
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: localhost
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend: { service: { name: fleetpulse-backend, port: { name: http } } }
+          - path: /docs
+            pathType: Prefix
+            backend: { service: { name: fleetpulse-backend, port: { name: http } } }
+          - path: /openapi.json
+            pathType: Prefix
+            backend: { service: { name: fleetpulse-backend, port: { name: http } } }
+          - path: /metrics
+            pathType: Prefix
+            backend: { service: { name: fleetpulse-backend, port: { name: http } } }
+          - path: /
+            pathType: Prefix
+            backend: { service: { name: fleetpulse-frontend, port: { name: http } } }
