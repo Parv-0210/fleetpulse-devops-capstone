@@ -1,0 +1,322 @@
+name: FleetPulse CI/CD
+
+# Pipeline order mirrors the delivery path:
+#   test (pytest + ruff + migrations on Postgres) ─┐
+#   frontend build + unit tests ───────────────────┼─> build images -> Trivy gate -> push to GHCR (SHA tags) -> deploy (Helm)
+#   infra validation (helm lint, terraform validate) ┘
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  REGISTRY: ghcr.io
+  PYTHON_VERSION: "3.12"
+  NODE_VERSION: "22"
+
+jobs:
+  backend-test:
+    name: Backend · ruff + pytest + migrations
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: fleetpulse_test
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U test -d fleetpulse_test"
+          --health-interval 5s --health-timeout 3s --health-retries 10
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      DATABASE_URL: postgresql+psycopg://test:test@localhost:5432/fleetpulse_test
+      TEST_DATABASE_URL: postgresql+psycopg://test:test@localhost:5432/fleetpulse_test
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+          cache-dependency-path: backend/requirements*.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements-dev.txt
+
+      - name: Lint (ruff)
+        run: |
+          ruff check .
+          ruff format --check .
+
+      - name: Verify Alembic migrations round-trip on PostgreSQL
+        run: |
+          python -m app.migrate
+          alembic current
+          alembic downgrade base
+          alembic upgrade head
+
+      - name: Run tests
+        run: pytest -v --junitxml=pytest-report.xml --cov=app --cov-report=term --cov-report=xml
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: backend-test-report
+          path: |
+            backend/pytest-report.xml
+            backend/coverage.xml
+          retention-days: 14
+
+  frontend-build:
+    name: Frontend · unit tests + Vite build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci --no-audit --no-fund
+
+      - name: Unit tests
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Upload bundle
+        uses: actions/upload-artifact@v7
+        with:
+          name: frontend-dist
+          path: frontend/dist
+          retention-days: 7
+
+  infra-validate:
+    name: Infra · helm lint + terraform validate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: azure/setup-helm@v5
+
+      - name: Helm lint and render
+        run: |
+          helm lint helm/fleetpulse
+          helm lint helm/fleetpulse -f helm/fleetpulse/values-dev.yaml
+          helm lint helm/fleetpulse -f helm/fleetpulse/values-prod.yaml
+          helm template fleetpulse helm/fleetpulse -n fleetpulse -f helm/fleetpulse/values-prod.yaml \
+            --set backend.tag=${{ github.sha }} --set frontend.tag=${{ github.sha }} > /tmp/rendered.yaml
+          echo "Rendered $(grep -c '^kind:' /tmp/rendered.yaml) Kubernetes objects"
+
+      - name: Validate plain manifests
+        run: |
+          for f in k8s/*.yaml troubleshooting/*.yaml; do
+            python3 -c "import sys,yaml; list(yaml.safe_load_all(open('$f')))" && echo "ok  $f"
+          done
+
+      - uses: hashicorp/setup-terraform@v4
+        with:
+          terraform_version: "1.9.8"
+
+      - name: Terraform fmt / init / validate
+        working-directory: terraform
+        run: |
+          terraform fmt -check -recursive -diff
+          terraform init -backend=false -input=false
+          terraform validate
+
+      - name: Compose file sanity
+        run: docker compose config --quiet
+
+  build-scan-push:
+    name: Image · ${{ matrix.component }} (build → Trivy → GHCR)
+    needs: [backend-test, frontend-build, infra-validate]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        component: [backend, frontend]
+    env:
+      IMAGE_NAME: fleetpulse-${{ matrix.component }}
+    outputs:
+      image_tag: ${{ steps.meta.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Resolve lowercase image repository
+        id: repo
+        run: echo "image=${REGISTRY}/${GITHUB_REPOSITORY_OWNER,,}/${IMAGE_NAME}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@v4
+
+      - name: Log in to GitHub Container Registry
+        if: github.event_name != 'pull_request'
+        uses: docker/login-action@v4
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Tags are derived from the commit: <full sha> and sha-<short sha>. Never "latest".
+      - name: Image metadata
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ steps.repo.outputs.image }}
+          tags: |
+            type=sha,prefix=,format=long
+            type=sha,prefix=sha-,format=short
+          labels: |
+            org.opencontainers.image.title=${{ env.IMAGE_NAME }}
+            org.opencontainers.image.revision=${{ github.sha }}
+
+      - name: Build image (local, not pushed yet)
+        uses: docker/build-push-action@v7
+        with:
+          context: ./${{ matrix.component }}
+          load: true
+          push: false
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.component }}
+          cache-to: type=gha,scope=${{ matrix.component }},mode=max
+
+      # Security gate: any fixable HIGH/CRITICAL CVE fails the job, so the image is never pushed.
+      - name: Trivy vulnerability scan (gate)
+        uses: aquasecurity/trivy-action@0.36.0
+        with:
+          image-ref: ${{ steps.repo.outputs.image }}:${{ github.sha }}
+          format: table
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+          scanners: vuln
+
+      - name: Trivy report (SARIF for the Security tab)
+        if: always()
+        uses: aquasecurity/trivy-action@0.36.0
+        with:
+          image-ref: ${{ steps.repo.outputs.image }}:${{ github.sha }}
+          format: sarif
+          output: trivy-${{ matrix.component }}.sarif
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "0"
+          scanners: vuln
+          skip-setup-trivy: true
+
+      - name: Upload SARIF to GitHub code scanning
+        if: always()
+        continue-on-error: true
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: trivy-${{ matrix.component }}.sarif
+          category: trivy-${{ matrix.component }}
+
+      - name: Generate SBOM (CycloneDX)
+        uses: aquasecurity/trivy-action@0.36.0
+        with:
+          image-ref: ${{ steps.repo.outputs.image }}:${{ github.sha }}
+          format: cyclonedx
+          output: sbom-${{ matrix.component }}.cdx.json
+          scanners: vuln
+          skip-setup-trivy: true
+
+      - name: Upload scan artifacts
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: security-${{ matrix.component }}
+          path: |
+            trivy-${{ matrix.component }}.sarif
+            sbom-${{ matrix.component }}.cdx.json
+          retention-days: 30
+
+      - name: Push image to GHCR
+        if: github.event_name != 'pull_request'
+        uses: docker/build-push-action@v7
+        with:
+          context: ./${{ matrix.component }}
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=${{ matrix.component }}
+
+      - name: Summary
+        if: github.event_name != 'pull_request'
+        run: |
+          {
+            echo "### ${IMAGE_NAME}"
+            echo '```'
+            echo "${{ steps.meta.outputs.tags }}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  deploy:
+    name: Deploy · helm upgrade --install on EKS
+    # Runs only for pushes to main and only once the repository variable DEPLOY_ENABLED is "true"
+    # (set it after `terraform apply`). Needs secrets AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY and
+    # variables AWS_REGION, EKS_CLUSTER_NAME, INGRESS_HOST.
+    needs: build-scan-push
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.DEPLOY_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: aws-actions/configure-aws-credentials@v6
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ vars.AWS_REGION }}
+
+      - uses: azure/setup-helm@v5
+
+      - name: Configure kubectl for EKS
+        run: aws eks update-kubeconfig --region "${{ vars.AWS_REGION }}" --name "${{ vars.EKS_CLUSTER_NAME }}"
+
+      - name: Deploy with Helm (image tag = commit SHA)
+        run: |
+          OWNER="${GITHUB_REPOSITORY_OWNER,,}"
+          helm upgrade --install fleetpulse ./helm/fleetpulse \
+            --namespace fleetpulse --create-namespace \
+            -f helm/fleetpulse/values-prod.yaml \
+            --set image.owner="${OWNER}" \
+            --set backend.tag="${{ github.sha }}" \
+            --set frontend.tag="${{ github.sha }}" \
+            --set ingress.host="${{ vars.INGRESS_HOST }}" \
+            --wait --timeout 10m
+
+      - name: Verify rollout
+        run: |
+          kubectl rollout status deployment/fleetpulse-backend -n fleetpulse --timeout=5m
+          kubectl rollout status deployment/fleetpulse-frontend -n fleetpulse --timeout=5m
+          kubectl get pods,svc,ingress,hpa -n fleetpulse
