@@ -1,0 +1,24 @@
+{
+  "name": "fleetpulse-frontend",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "FleetPulse fleet maintenance dashboard (React + Vite)",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --port 3000",
+    "test": "node --test \"src/lib/**/*.test.js\""
+  },
+  "dependencies": {
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "6.1.2",
+    "vite": "8.3.4"
+  },
+  "engines": {
+    "node": ">=22.12"
+  }
+}
