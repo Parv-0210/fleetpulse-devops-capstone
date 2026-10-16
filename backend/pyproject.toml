@@ -1,0 +1,12 @@
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+extend-exclude = [".venv", "alembic/versions"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "W"]
+# B008: FastAPI dependency injection relies on Depends()/Query() in defaults by design.
+ignore = ["B008"]
+
+[tool.coverage.run]
+source = ["app"]
