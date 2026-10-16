@@ -12,7 +12,7 @@
 |---|---|---|
 | Domain | **FleetPulse** — vehicle fleet maintenance tracker | Own domain (rubric requires it); not in the suggested list; two related tables give a richer API than a single CRUD board |
 | Backend | FastAPI + SQLAlchemy 2 + Alembic + PostgreSQL 16 | Course stack; rubric M1 |
-| Frontend | React 19 + Vite 7, plain CSS, served by **nginx-unprivileged** | Multi-stage build + non-root runtime (M4) |
+| Frontend | React 19 + Vite 8, plain CSS, served by **nginx-unprivileged** | Multi-stage build + non-root runtime (M4) |
 | Tests | pytest, isolated test DB (SQLite in-memory locally, Postgres service container in CI), ruff for code quality | M2 |
 | CI/CD | GitHub Actions: test → build → Trivy → push to GHCR (SHA tags) → optional Helm deploy | M5, M6 |
 | Infra | Terraform: VPC (2 public + 2 private subnets, NAT) + EKS managed node group + EBS CSI addon (IRSA) | M7 |
