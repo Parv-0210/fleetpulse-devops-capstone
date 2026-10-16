@@ -59,7 +59,7 @@ the exact commit that produced it.
 | Tests | pytest (19 tests), ruff, Node's built-in test runner for the frontend helpers |
 | Containers | Multi-stage Dockerfiles, both images run as non-root users |
 | CI/CD | GitHub Actions (two workflows, 13 jobs), GitHub Container Registry, Trivy, CodeQL, pip-audit, npm audit |
-| Infrastructure | Terraform: a VPC with public and private subnets, an EKS cluster with a managed node group |
+| Infrastructure | Terraform: a VPC with public and private subnets, EKS with a managed node group, GitHub OIDC deploy role |
 | Kubernetes | A Helm chart with Deployments, Services, Ingress, HPA, PDBs and a Helm test |
 | Monitoring | kube-prometheus-stack, with a Grafana dashboard that ships inside the chart |
 
@@ -143,31 +143,38 @@ and Terraform validation.
 
 ## Deploying to AWS
 
-The full steps are in [terraform/README.md](terraform/README.md) and [k8s/README.md](k8s/README.md).
-In short:
+Terraform builds the AWS side and GitHub Actions deploys to it. The pipeline signs in to AWS with
+GitHub's OIDC token and assumes a role that Terraform creates, so **no AWS keys are stored in GitHub**.
 
-```bash
-cd terraform
-cp terraform.tfvars.example terraform.tfvars
-terraform init
-terraform plan
-terraform apply                                  # about 15 minutes
-$(terraform output -raw configure_kubectl)       # point kubectl at the new cluster
-
-cd ..
-kubectl apply -f k8s/namespace.yaml
-kubectl apply -f k8s/storageclass-gp3.yaml
-./k8s/bootstrap/ingress-nginx.sh
-./monitoring/install.sh
-./scripts/deploy.sh prod                         # Helm, using the current commit SHA
+```text
+terraform apply ──▶ VPC (2 public + 2 private subnets, NAT) ──▶ EKS 1.36 + managed node group
+                 └▶ IAM role trusted by GitHub OIDC for this repo's main branch only
+                        │
+git push ──▶ CI/CD ──▶ deploy job assumes the role ──▶ installs ingress-nginx (AWS NLB),
+                                                        Prometheus + Grafana, and FleetPulse
+                                                        with the commit-SHA images
 ```
 
-To let the pipeline deploy on every push to `main`, set the repository variable `DEPLOY_ENABLED` to
-`true`. Also add the variables `AWS_REGION`, `EKS_CLUSTER_NAME` and `INGRESS_HOST`, and the secrets
-`AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`. No credentials are stored in this repository.
+One command, from an empty account to a public URL:
 
-The cluster costs real money while it's running, roughly 0.25 USD an hour. Run `terraform destroy` once
-you're done.
+```bash
+AWS_PROFILE=<your-profile> ./scripts/aws-up.sh
+```
+
+It runs `terraform plan`, asks before applying, points `kubectl` at the cluster, saves the deploy role
+as the repository variable `AWS_ROLE_ARN`, and runs the pipeline. From then on every push to `main`
+rolls the cluster to the new commit. The app answers on the load balancer's DNS name, so no domain is
+needed. Set the repository variable `INGRESS_HOST` if you want to use one.
+
+When you're done:
+
+```bash
+AWS_PROFILE=<your-profile> ./scripts/aws-down.sh
+```
+
+It removes the load balancer and volumes first, then runs `terraform destroy`. The cluster costs
+roughly 0.25 USD an hour while it exists. The step-by-step version is in
+[terraform/README.md](terraform/README.md) and [k8s/README.md](k8s/README.md).
 
 ### Trying it on minikube
 

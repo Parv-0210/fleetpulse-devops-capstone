@@ -42,3 +42,8 @@ output "configure_kubectl" {
   description = "Run this to point kubectl at the new cluster."
   value       = "aws eks update-kubeconfig --region ${var.aws_region} --name ${module.eks.cluster_name}"
 }
+
+output "github_actions_role_arn" {
+  description = "Set this as the repository variable AWS_ROLE_ARN to enable the EKS deploy job."
+  value       = aws_iam_role.github_actions.arn
+}

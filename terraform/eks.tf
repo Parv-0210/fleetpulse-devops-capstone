@@ -40,6 +40,32 @@ module "eks" {
     }
   }
 
+  # The EKS metrics-server add-on listens on 10251; the module's default node rules don't open it,
+  # and without it `kubectl top` and the HPA report <unknown>.
+  node_security_group_additional_rules = {
+    metrics_server = {
+      description                   = "Control plane to metrics-server"
+      protocol                      = "tcp"
+      from_port                     = 10251
+      to_port                       = 10251
+      type                          = "ingress"
+      source_cluster_security_group = true
+    }
+  }
+
+  # The GitHub Actions deploy role (github-oidc.tf) gets cluster-admin inside Kubernetes.
+  access_entries = {
+    github_actions = {
+      principal_arn = aws_iam_role.github_actions.arn
+      policy_associations = {
+        admin = {
+          policy_arn   = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+          access_scope = { type = "cluster" }
+        }
+      }
+    }
+  }
+
   eks_managed_node_group_defaults = {
     ami_type       = "AL2023_x86_64_STANDARD"
     instance_types = var.node_instance_types

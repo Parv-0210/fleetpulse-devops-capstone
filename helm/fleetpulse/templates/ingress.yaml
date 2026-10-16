@@ -16,7 +16,10 @@ spec:
     {{- toYaml . | nindent 4 }}
   {{- end }}
   rules:
-    - host: {{ .Values.ingress.host | quote }}
+    # With no host the rule matches any hostname, so the app answers on the cloud load
+    # balancer's DNS name (EKS) without a custom domain.
+    - {{- with .Values.ingress.host }} host: {{ . | quote }}
+      {{- end }}
       http:
         paths:
           # API traffic goes straight to the FastAPI Service ...

@@ -346,35 +346,66 @@ jobs:
 
   deploy:
     name: Deploy · helm upgrade --install on EKS
-    # Runs only for pushes to main and only once the repository variable DEPLOY_ENABLED is "true"
-    # (set it after `terraform apply`). Needs secrets AWS_ACCESS_KEY_ID / AWS_SECRET_ACCESS_KEY and
-    # variables AWS_REGION, EKS_CLUSTER_NAME, INGRESS_HOST.
-    needs: build-scan-push
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.DEPLOY_ENABLED == 'true'
+    # Turns on by itself once `terraform apply` has run and the repository variable AWS_ROLE_ARN is set
+    # to the `github_actions_role_arn` output. Authentication is GitHub OIDC: no AWS keys are stored.
+    # Optional variables: AWS_REGION (default ap-south-1), EKS_CLUSTER_NAME (default fleetpulse-dev-eks),
+    # INGRESS_HOST (default: answer on the load balancer DNS name).
+    needs: [build-scan-push, kind-smoke]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && vars.AWS_ROLE_ARN != ''
     runs-on: ubuntu-latest
-    environment: production
+    timeout-minutes: 30
+    environment:
+      name: production
+      url: ${{ steps.url.outputs.app_url }}
     permissions:
       contents: read
-      packages: read
+      id-token: write   # lets the job request the GitHub OIDC token
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION || 'ap-south-1' }}
+      EKS_CLUSTER_NAME: ${{ vars.EKS_CLUSTER_NAME || 'fleetpulse-dev-eks' }}
     steps:
       - uses: actions/checkout@v7
 
-      - uses: aws-actions/configure-aws-credentials@v6
+      - name: Assume the deploy role (OIDC)
+        uses: aws-actions/configure-aws-credentials@v6
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: ${{ vars.AWS_REGION }}
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
 
       - uses: azure/setup-helm@v5
 
       - name: Configure kubectl for EKS
-        run: aws eks update-kubeconfig --region "${{ vars.AWS_REGION }}" --name "${{ vars.EKS_CLUSTER_NAME }}"
+        run: |
+          aws eks update-kubeconfig --region "$AWS_REGION" --name "$EKS_CLUSTER_NAME"
+          kubectl get nodes -o wide
 
-      - name: Deploy with Helm (image tag = commit SHA)
+      # Idempotent cluster bootstrap: safe to run on every deploy, a no-op once everything exists.
+      - name: Bootstrap namespace, storage class and ingress controller
+        run: |
+          kubectl apply -f k8s/namespace.yaml
+          kubectl apply -f k8s/storageclass-gp3.yaml
+          helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx >/dev/null
+          helm repo add prometheus-community https://prometheus-community.github.io/helm-charts >/dev/null
+          helm repo update >/dev/null
+          helm upgrade --install ingress-nginx ingress-nginx/ingress-nginx \
+            --namespace ingress-nginx --create-namespace \
+            --set controller.service.type=LoadBalancer \
+            --set controller.service.annotations."service\.beta\.kubernetes\.io/aws-load-balancer-type"=nlb \
+            --set controller.service.annotations."service\.beta\.kubernetes\.io/aws-load-balancer-scheme"=internet-facing \
+            --wait --timeout 10m
+
+      - name: Install or upgrade Prometheus and Grafana
+        run: |
+          helm upgrade --install kube-prometheus-stack prometheus-community/kube-prometheus-stack \
+            --namespace monitoring --create-namespace \
+            -f monitoring/kube-prometheus-stack-values.yaml \
+            --wait --timeout 15m
+
+      - name: Deploy FleetPulse (image tag = commit SHA)
         run: |
           OWNER="$(echo "$GITHUB_REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')"
           helm upgrade --install fleetpulse ./helm/fleetpulse \
-            --namespace fleetpulse --create-namespace \
+            --namespace fleetpulse \
             -f helm/fleetpulse/values-prod.yaml \
             --set image.owner="${OWNER}" \
             --set backend.tag="${{ github.sha }}" \
@@ -382,8 +413,21 @@ jobs:
             --set ingress.host="${{ vars.INGRESS_HOST }}" \
             --wait --timeout 10m
 
-      - name: Verify rollout
+      - name: Verify rollout and helm test
         run: |
           kubectl rollout status deployment/fleetpulse-backend -n fleetpulse --timeout=5m
           kubectl rollout status deployment/fleetpulse-frontend -n fleetpulse --timeout=5m
+          helm test fleetpulse -n fleetpulse --logs
           kubectl get pods,svc,ingress,hpa -n fleetpulse
+
+      - name: Public URL
+        id: url
+        run: |
+          for i in $(seq 1 30); do
+            LB="$(kubectl get svc ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')"
+            [ -n "$LB" ] && break; sleep 10
+          done
+          HOST="${{ vars.INGRESS_HOST }}"; HOST="${HOST:-$LB}"
+          echo "app_url=http://$HOST" >> "$GITHUB_OUTPUT"
+          for i in $(seq 1 30); do curl -fsS "http://$LB/api/fleet/stats" -H "Host: $HOST" && break; sleep 10; done
+          echo "### FleetPulse is live: http://$HOST" >> "$GITHUB_STEP_SUMMARY"

@@ -40,9 +40,9 @@ variable "single_nat_gateway" {
 }
 
 variable "cluster_version" {
-  description = "Kubernetes version for the EKS control plane."
+  description = "Kubernetes version for the EKS control plane (keep it in standard support; extended support costs 6x)."
   type        = string
-  default     = "1.31"
+  default     = "1.36"
 }
 
 variable "cluster_endpoint_public_access_cidrs" {
@@ -76,4 +76,16 @@ variable "node_disk_size_gb" {
   description = "Root volume size for worker nodes."
   type        = number
   default     = 20
+}
+
+variable "github_repo" {
+  description = "GitHub owner/repo whose Actions may assume the deploy role via OIDC."
+  type        = string
+  default     = "Parv-0210/fleetpulse-devops-capstone"
+}
+
+variable "create_github_oidc_provider" {
+  description = "Create the GitHub OIDC identity provider. Set false if the account already has one."
+  type        = bool
+  default     = true
 }

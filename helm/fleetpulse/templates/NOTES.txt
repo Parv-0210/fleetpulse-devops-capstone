@@ -10,10 +10,14 @@ Check the rollout:
 
 {{- if .Values.ingress.enabled }}
 
+{{- $h := default "<load-balancer-dns>" .Values.ingress.host }}
 Open the app via the Ingress:
-  http://{{ .Values.ingress.host }}/        (UI)
-  http://{{ .Values.ingress.host }}/docs    (Swagger)
-  http://{{ .Values.ingress.host }}/metrics (Prometheus exposition)
+  http://{{ $h }}/        (UI)
+  http://{{ $h }}/docs    (Swagger)
+  http://{{ $h }}/metrics (Prometheus exposition)
+{{- if not .Values.ingress.host }}
+  Load balancer DNS: kubectl get svc ingress-nginx-controller -n ingress-nginx -o jsonpath='{.status.loadBalancer.ingress[0].hostname}'
+{{- end }}
 
   minikube: add "$(minikube ip) {{ .Values.ingress.host }}" to /etc/hosts (or use `minikube tunnel` + 127.0.0.1).
   EKS     : point a DNS record (or <ELB-IP>.nip.io) at the ingress-nginx LoadBalancer.
