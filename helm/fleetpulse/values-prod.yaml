@@ -1,0 +1,35 @@
+# AWS EKS (provisioned by ./terraform). Images come from GHCR with the git SHA tag:
+#   helm upgrade --install fleetpulse ./helm/fleetpulse -n fleetpulse --create-namespace \
+#     -f helm/fleetpulse/values-prod.yaml --set backend.tag=$SHA --set frontend.tag=$SHA
+image:
+  pullPolicy: IfNotPresent
+  # pullSecrets: [{ name: ghcr-pull }]   # only if the GHCR packages are private (see k8s/bootstrap/ghcr-pull-secret.sh)
+
+backend:
+  replicaCount: 2
+  seedDemoData: true
+  resources:
+    requests: { cpu: 150m, memory: 256Mi }
+    limits: { cpu: 750m, memory: 512Mi }
+
+frontend:
+  replicaCount: 2
+
+postgres:
+  storage:
+    size: 5Gi
+    storageClassName: gp3
+
+ingress:
+  enabled: true
+  className: nginx
+  host: fleetpulse.local      # override with --set ingress.host=<your-dns-or-nip.io-name>
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: 2m
+
+hpa:
+  backend:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPUUtilizationPercentage: 60

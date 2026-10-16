@@ -1,0 +1,14 @@
+apiVersion: v2
+name: fleetpulse
+description: FleetPulse fleet-maintenance tracker - FastAPI backend, React frontend and PostgreSQL, with Ingress, HPA, PDB and Prometheus/Grafana integration.
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+kubeVersion: ">=1.27.0-0"
+keywords: [fleet, maintenance, fastapi, react, postgresql, devops-capstone]
+home: https://github.com/Parv-0210/fleetpulse-devops-capstone
+sources:
+  - https://github.com/Parv-0210/fleetpulse-devops-capstone
+maintainers:
+  - name: Parv-0210
+    url: https://github.com/Parv-0210

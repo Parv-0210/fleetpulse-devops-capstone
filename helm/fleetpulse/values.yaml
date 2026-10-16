@@ -1,0 +1,102 @@
+# Default values for the FleetPulse chart.
+# Environment overlays: values-dev.yaml (minikube) and values-prod.yaml (EKS).
+
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  registry: ghcr.io
+  owner: parv-0210            # GHCR namespace (lowercase). CI passes --set image.owner=<repo owner>.
+  pullPolicy: IfNotPresent
+  pullSecrets: []             # e.g. [{ name: ghcr-pull }] when the GHCR packages are private
+
+backend:
+  repository: ""              # defaults to <registry>/<owner>/fleetpulse-backend
+  tag: ""                     # the git commit SHA; CI sets --set backend.tag=$GITHUB_SHA
+  replicaCount: 2
+  port: 8000
+  env:
+    APP_ENV: kubernetes
+    CORS_ORIGINS: "*"
+    SERVICE_DUE_SOON_KM: "500"
+    WEB_CONCURRENCY: "1"
+  seedDemoData: false         # true inserts sample vehicles on first start (handy for demos)
+  resources:
+    requests: { cpu: 100m, memory: 192Mi }
+    limits: { cpu: 500m, memory: 384Mi }
+  migrate:
+    resources:
+      requests: { cpu: 50m, memory: 128Mi }
+      limits: { cpu: 250m, memory: 256Mi }
+  podAnnotations: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+frontend:
+  repository: ""              # defaults to <registry>/<owner>/fleetpulse-frontend
+  tag: ""
+  replicaCount: 2
+  port: 8080
+  resources:
+    requests: { cpu: 25m, memory: 32Mi }
+    limits: { cpu: 200m, memory: 128Mi }
+  podAnnotations: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+postgres:
+  enabled: true               # false -> point DATABASE_URL at an external DB (e.g. RDS) via existingSecret
+  image: postgres:16-alpine
+  database: fleetpulse
+  username: fleetpulse
+  password: fleetpulse-change-me   # demo default; override with --set postgres.password=... or existingSecret
+  existingSecret: ""          # Secret with key DATABASE_URL (and POSTGRES_PASSWORD when postgres.enabled)
+  storage:
+    size: 2Gi
+    storageClassName: ""      # "" = cluster default (minikube: standard, EKS: gp3 from k8s/storageclass-gp3.yaml)
+  resources:
+    requests: { cpu: 100m, memory: 128Mi }
+    limits: { cpu: 500m, memory: 512Mi }
+
+service:
+  type: ClusterIP
+
+ingress:
+  enabled: true
+  className: nginx
+  host: fleetpulse.local
+  annotations: {}
+  # Extra backend paths exposed next to /api so Swagger and probes are reachable through the Ingress.
+  backendExtraPaths: ["/docs", "/openapi.json", "/health", "/ready", "/metrics"]
+  tls: []
+  #  - secretName: fleetpulse-tls
+  #    hosts: [fleetpulse.example.com]
+
+hpa:
+  backend:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 6
+    targetCPUUtilizationPercentage: 60
+  frontend:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 4
+    targetCPUUtilizationPercentage: 70
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+monitoring:
+  serviceMonitor:
+    enabled: true
+    interval: 15s
+    labels:
+      release: kube-prometheus-stack   # must match the Prometheus operator's serviceMonitorSelector
+  grafanaDashboard:
+    enabled: true
+    labels:
+      grafana_dashboard: "1"

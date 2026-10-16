@@ -1,0 +1,26 @@
+# `helm test fleetpulse -n fleetpulse` runs this pod: it must reach both Services.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: {{ include "fleetpulse.fullname" . }}-test-connection
+  labels:
+    {{- include "fleetpulse.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/hook: test
+    helm.sh/hook-delete-policy: hook-succeeded
+spec:
+  restartPolicy: Never
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 100
+  containers:
+    - name: curl
+      image: curlimages/curl:8.12.1
+      command: ["sh", "-c"]
+      args:
+        - |
+          set -e
+          curl -fsS http://{{ include "fleetpulse.backend.name" . }}:{{ .Values.backend.port }}/health
+          curl -fsS http://{{ include "fleetpulse.backend.name" . }}:{{ .Values.backend.port }}/api/fleet/stats
+          curl -fsS http://{{ include "fleetpulse.frontend.name" . }}/healthz
+          echo "all endpoints reachable"

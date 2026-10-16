@@ -1,0 +1,10 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: fleetpulse
+  labels:
+    app.kubernetes.io/part-of: fleetpulse
+    # Pod Security Admission: every pod in this namespace must satisfy the "baseline" profile,
+    # and we get warnings if anything falls short of "restricted".
+    pod-security.kubernetes.io/enforce: baseline
+    pod-security.kubernetes.io/warn: restricted

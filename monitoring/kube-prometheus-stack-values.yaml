@@ -1,0 +1,61 @@
+# Values for prometheus-community/kube-prometheus-stack (install with monitoring/install.sh).
+# Sized for a classroom cluster. Grafana picks up the FleetPulse dashboard ConfigMap that
+# the application Helm chart creates (label grafana_dashboard=1) via the sidecar.
+
+fullnameOverride: kube-prometheus-stack
+
+prometheus:
+  prometheusSpec:
+    # Scrape every ServiceMonitor in every namespace, not only the ones with the chart's release label.
+    serviceMonitorSelectorNilUsesHelmValues: false
+    podMonitorSelectorNilUsesHelmValues: false
+    serviceMonitorNamespaceSelector: {}
+    retention: 2d
+    scrapeInterval: 15s
+    evaluationInterval: 30s
+    resources:
+      requests: { cpu: 100m, memory: 512Mi }
+      limits: { cpu: 1000m, memory: 1Gi }
+
+grafana:
+  enabled: true
+  adminUser: admin
+  adminPassword: fleetpulse-admin        # demo only - override with --set grafana.adminPassword=...
+  defaultDashboardsEnabled: true
+  service:
+    type: ClusterIP
+  sidecar:
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      labelValue: "1"
+      searchNamespace: ALL
+      folder: /tmp/dashboards
+      folderAnnotation: grafana_folder
+      provider:
+        foldersFromFilesStructure: false
+    datasources:
+      enabled: true
+      defaultDatasourceEnabled: true
+      uid: prometheus                    # referenced by helm/fleetpulse/dashboards/fleetpulse.json
+  resources:
+    requests: { cpu: 50m, memory: 128Mi }
+    limits: { cpu: 300m, memory: 256Mi }
+
+alertmanager:
+  enabled: false                         # out of scope for the capstone; keeps the footprint small
+
+kubeStateMetrics:
+  enabled: true
+nodeExporter:
+  enabled: true
+
+# Components that cannot be scraped on managed control planes / minikube (avoid permanently DOWN targets).
+kubeControllerManager:
+  enabled: false
+kubeScheduler:
+  enabled: false
+kubeProxy:
+  enabled: false
+kubeEtcd:
+  enabled: false

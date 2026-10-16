@@ -1,0 +1,35 @@
+# minikube / kind: images built locally and loaded into the cluster.
+#   minikube image load fleetpulse-backend:local fleetpulse-frontend:local
+image:
+  pullPolicy: Never
+
+backend:
+  repository: fleetpulse-backend
+  tag: local
+  replicaCount: 2
+  seedDemoData: true
+  resources:
+    requests: { cpu: 50m, memory: 128Mi }
+    limits: { cpu: 300m, memory: 256Mi }
+
+frontend:
+  repository: fleetpulse-frontend
+  tag: local
+  replicaCount: 2
+
+postgres:
+  storage:
+    size: 1Gi
+    storageClassName: standard
+
+ingress:
+  enabled: true
+  className: nginx
+  host: fleetpulse.local
+
+hpa:
+  backend:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 4
+    targetCPUUtilizationPercentage: 50

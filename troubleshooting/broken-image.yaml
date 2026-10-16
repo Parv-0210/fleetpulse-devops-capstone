@@ -1,0 +1,36 @@
+# Troubleshooting lab 1: a Deployment that references an image tag that does not exist.
+#   kubectl apply -f troubleshooting/broken-image.yaml
+#   kubectl get pods -n fleetpulse                  -> ImagePullBackOff / ErrImagePull
+#   kubectl describe pod -l app=broken-image -n fleetpulse   -> "manifest unknown" in Events
+#   kubectl get events -n fleetpulse --sort-by=.lastTimestamp
+# Fix: correct the tag (or run `kubectl delete -f troubleshooting/broken-image.yaml`).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: broken-image
+  namespace: fleetpulse
+  labels:
+    app: broken-image
+    lab: troubleshooting
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: broken-image
+  template:
+    metadata:
+      labels:
+        app: broken-image
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+      containers:
+        - name: backend
+          image: ghcr.io/parv-0210/fleetpulse-backend:this-tag-does-not-exist
+          ports:
+            - containerPort: 8000
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]

@@ -1,0 +1,47 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: {{ include "fleetpulse.fullname" . }}
+  labels:
+    {{- include "fleetpulse.labels" . | nindent 4 }}
+  {{- with .Values.ingress.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  {{- with .Values.ingress.tls }}
+  tls:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  rules:
+    - host: {{ .Values.ingress.host | quote }}
+      http:
+        paths:
+          # API traffic goes straight to the FastAPI Service ...
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "fleetpulse.backend.name" . }}
+                port:
+                  name: http
+          {{- range .Values.ingress.backendExtraPaths }}
+          - path: {{ . }}
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "fleetpulse.backend.name" $ }}
+                port:
+                  name: http
+          {{- end }}
+          # ... everything else is the React app served by nginx.
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ include "fleetpulse.frontend.name" . }}
+                port:
+                  name: http
+{{- end }}

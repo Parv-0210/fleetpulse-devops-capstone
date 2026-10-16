@@ -1,0 +1,21 @@
+# Troubleshooting lab 2: a Service whose selector matches no Pods.
+#   kubectl apply -f troubleshooting/broken-service.yaml
+#   kubectl get endpoints broken-backend -n fleetpulse     -> <none>
+#   kubectl get pods -n fleetpulse --show-labels            -> real label is app.kubernetes.io/component=backend
+#   kubectl run -it --rm probe --image=curlimages/curl -n fleetpulse -- curl -m 3 http://broken-backend:8000/health
+# Lesson: a Service is only a label selector; no matching labels = no endpoints = no traffic.
+# Fix: change the selector to the backend's labels, or delete the Service.
+apiVersion: v1
+kind: Service
+metadata:
+  name: broken-backend
+  namespace: fleetpulse
+  labels:
+    lab: troubleshooting
+spec:
+  type: ClusterIP
+  selector:
+    app: fleetpulse-api          # typo on purpose: nothing carries this label
+  ports:
+    - port: 8000
+      targetPort: 8000

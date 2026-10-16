@@ -1,0 +1,17 @@
+{{- if .Values.podDisruptionBudget.enabled }}
+{{- range $component := list "backend" "frontend" }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: {{ include "fleetpulse.fullname" $ }}-{{ $component }}
+  labels:
+    {{- include "fleetpulse.labels" $ | nindent 4 }}
+    app.kubernetes.io/component: {{ $component }}
+spec:
+  minAvailable: {{ $.Values.podDisruptionBudget.minAvailable }}
+  selector:
+    matchLabels:
+      {{- include "fleetpulse.selectorLabels" (dict "root" $ "component" $component) | nindent 6 }}
+---
+{{- end }}
+{{- end }}
