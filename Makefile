@@ -67,6 +67,9 @@ k8s-deploy-dev: ## helm upgrade --install with minikube values
 k8s-deploy-prod: ## helm upgrade --install with EKS values and the current git SHA
 	./scripts/deploy.sh prod
 
+k8s-release: ## Wait for this commit's pipeline, then roll the cluster to its SHA-tagged images
+	./scripts/watch-and-deploy.sh
+
 k8s-status: ## Pods, services, ingress, HPA and Helm release
 	kubectl get pods,svc,ingress,hpa -n $(NAMESPACE)
 	helm list -n $(NAMESPACE)
@@ -97,4 +100,4 @@ tf-apply: ## terraform apply the saved plan
 tf-destroy: ## terraform destroy (remember to delete LoadBalancer services first)
 	cd terraform && terraform destroy
 
-.PHONY: help venv test lint fe-install fe-test fe-build check up up-d down down-v build scan helm-lint k8s-up k8s-deploy-dev k8s-deploy-prod k8s-status k8s-test monitoring load-test k8s-down tf-validate tf-plan tf-apply tf-destroy
+.PHONY: k8s-release help venv test lint fe-install fe-test fe-build check up up-d down down-v build scan helm-lint k8s-up k8s-deploy-dev k8s-deploy-prod k8s-status k8s-test monitoring load-test k8s-down tf-validate tf-plan tf-apply tf-destroy

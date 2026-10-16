@@ -1,0 +1,156 @@
+ Image fleetpulse-frontend:local Building 
+ Image fleetpulse-backend:local Building 
+#1 [internal] load local bake definitions
+#1 reading from stdin 1.09kB done
+#1 DONE 0.0s
+
+#2 [frontend internal] load build definition from Dockerfile
+#2 transferring dockerfile: 1.25kB done
+#2 DONE 0.0s
+
+#3 [backend internal] load build definition from Dockerfile
+#3 transferring dockerfile: 1.99kB done
+#3 DONE 0.0s
+
+#4 [backend internal] load metadata for docker.io/library/python:3.12-slim
+#4 DONE 0.0s
+
+#5 [backend internal] load .dockerignore
+#5 transferring context: 109B done
+#5 DONE 0.0s
+
+#6 [backend internal] load build context
+#6 transferring context: 1.81kB done
+#6 DONE 0.0s
+
+#7 [backend deps 1/4] FROM docker.io/library/python:3.12-slim@sha256:05cda9777409a9c3ffddd94a4c476b79f0769a0b4857f0c7ed9226b6800b0d6f
+#7 resolve docker.io/library/python:3.12-slim@sha256:05cda9777409a9c3ffddd94a4c476b79f0769a0b4857f0c7ed9226b6800b0d6f 0.0s done
+#7 DONE 0.0s
+
+#8 [backend deps 4/4] RUN python -m venv /opt/venv     && /opt/venv/bin/pip install --upgrade pip     && /opt/venv/bin/pip install -r requirements.txt     && /opt/venv/bin/pip uninstall -y pip setuptools wheel || true
+#8 CACHED
+
+#9 [backend stage-1 5/7] COPY --chown=app:app alembic.ini entrypoint.sh ./
+#9 CACHED
+
+#10 [backend stage-1 6/7] COPY --chown=app:app alembic ./alembic
+#10 CACHED
+
+#11 [backend deps 3/4] COPY requirements.txt .
+#11 CACHED
+
+#12 [backend stage-1 2/7] RUN apt-get update && apt-get upgrade -y --no-install-recommends && rm -rf /var/lib/apt/lists/*     && rm -rf /usr/local/lib/python3.12/site-packages/pip* /usr/local/lib/python3.12/site-packages/setuptools*               /usr/local/lib/python3.12/site-packages/wheel* /usr/local/bin/pip* /usr/local/lib/python3.12/ensurepip     && groupadd --gid 10001 app && useradd --uid 10001 --gid app --home-dir /app --no-create-home --shell /usr/sbin/nologin app
+#12 CACHED
+
+#13 [backend stage-1 4/7] COPY --from=deps /opt/venv /opt/venv
+#13 CACHED
+
+#14 [backend deps 2/4] WORKDIR /app
+#14 CACHED
+
+#15 [backend stage-1 3/7] WORKDIR /app
+#15 CACHED
+
+#16 [backend stage-1 7/7] COPY --chown=app:app app ./app
+#16 CACHED
+
+#17 [backend] exporting to image
+#17 exporting layers done
+#17 exporting manifest sha256:bef31170d86738c21aef6f927d6296715c86e4b10712aac12454c058d4728db9 done
+#17 exporting config sha256:7f22dceac525441b31b8183178280b9155270224967bcbc6f16a03a7495add88 done
+#17 exporting attestation manifest sha256:d60a45f3861783c6f58cc054a7f96319f706d90e7cdfc7ae2a5e39c4a05f2b81
+#17 exporting attestation manifest sha256:d60a45f3861783c6f58cc054a7f96319f706d90e7cdfc7ae2a5e39c4a05f2b81 done
+#17 exporting manifest list sha256:081574d2aa35ba97694e5513656059584f37187357064fc67668264b7a4a7425 done
+#17 naming to docker.io/library/fleetpulse-backend:local done
+#17 unpacking to docker.io/library/fleetpulse-backend:local done
+#17 DONE 0.0s
+
+#18 [backend] resolving provenance for metadata file
+#18 DONE 0.0s
+
+#19 [frontend internal] load metadata for docker.io/nginxinc/nginx-unprivileged:1.30-alpine-slim
+#19 DONE 1.7s
+
+#20 [frontend internal] load metadata for docker.io/library/node:22-alpine
+#20 DONE 1.7s
+
+#21 [frontend internal] load .dockerignore
+#21 transferring context: 69B done
+#21 DONE 0.0s
+
+#22 [frontend stage-1 1/4] FROM docker.io/nginxinc/nginx-unprivileged:1.30-alpine-slim@sha256:4ac59c85c8c46d9e91eaabd2122cda4923ba380cf11f4138e389f069bcdc77a3
+#22 resolve docker.io/nginxinc/nginx-unprivileged:1.30-alpine-slim@sha256:4ac59c85c8c46d9e91eaabd2122cda4923ba380cf11f4138e389f069bcdc77a3 done
+#22 DONE 0.0s
+
+#23 [frontend build 1/6] FROM docker.io/library/node:22-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402
+#23 resolve docker.io/library/node:22-alpine@sha256:0a7108bf6c7bf5de370ffb1a3ed6be93d405b43ff159f681a8d18c0e2bc2e402 done
+#23 DONE 0.0s
+
+#24 [frontend internal] load build context
+#24 transferring context: 915B done
+#24 DONE 0.0s
+
+#25 [frontend build 5/6] COPY . .
+#25 CACHED
+
+#26 [frontend stage-1 3/4] COPY --chown=nginx:nginx nginx/default.conf.template /etc/nginx/templates/default.conf.template
+#26 CACHED
+
+#27 [frontend build 3/6] COPY package.json package-lock.json ./
+#27 CACHED
+
+#28 [frontend stage-1 2/4] RUN apk upgrade --no-cache
+#28 CACHED
+
+#29 [frontend build 2/6] WORKDIR /app
+#29 CACHED
+
+#30 [frontend build 4/6] RUN npm ci --no-audit --no-fund
+#30 CACHED
+
+#31 [frontend build 6/6] RUN npm test && npm run build
+#31 CACHED
+
+#32 [frontend stage-1 4/4] COPY --from=build --chown=nginx:nginx /app/dist /usr/share/nginx/html
+#32 CACHED
+
+#33 [frontend] exporting to image
+#33 exporting layers done
+#33 exporting manifest sha256:77e3b698af39df9d279874bacdfc4052d73e9ffb5f5619cb15a8566f47a7a677 done
+#33 exporting config sha256:357f3cbd3e61cfe4327f78b64c488c8fcd9919851fd15cf421d4ad94d22d8752 done
+#33 exporting attestation manifest sha256:c3aab84abfc4caa96040d18e412ac8f73a9f21d8acafe0dd9dc42c0ed52a6e0e done
+#33 exporting manifest list sha256:8a5fd46b18b38ffdaa7d34721b9d9c114a388e93fcdf91f4842a4fa76f62a99e done
+#33 naming to docker.io/library/fleetpulse-frontend:local done
+#33 unpacking to docker.io/library/fleetpulse-frontend:local done
+#33 DONE 0.0s
+
+#34 [frontend] resolving provenance for metadata file
+#34 DONE 0.0s
+ Image fleetpulse-backend:local Built 
+ Image fleetpulse-frontend:local Built 
+ Volume fleetpulse_postgres-data Creating 
+ Network fleetpulse_default Creating 
+ Network fleetpulse_default Creating 
+ Volume fleetpulse_postgres-data Creating 
+ Volume fleetpulse_postgres-data Created 
+ Volume fleetpulse_postgres-data Created 
+ Network fleetpulse_default Created 
+ Network fleetpulse_default Created 
+ Container fleetpulse-postgres Creating 
+ Container fleetpulse-postgres Created 
+ Container fleetpulse-backend Creating 
+ Container fleetpulse-backend Created 
+ Container fleetpulse-frontend Creating 
+ Container fleetpulse-frontend Created 
+ Container fleetpulse-postgres Starting 
+ Container fleetpulse-postgres Started 
+ Container fleetpulse-postgres Waiting 
+ Container fleetpulse-postgres Healthy 
+ Container fleetpulse-backend Starting 
+ Container fleetpulse-backend Started 
+ Container fleetpulse-frontend Starting 
+ Container fleetpulse-frontend Started 
+SERVICE    STATUS
+backend    Up 2 seconds (health: starting)
+frontend   Up 2 seconds (health: starting)
+postgres   Up 7 seconds (healthy)
