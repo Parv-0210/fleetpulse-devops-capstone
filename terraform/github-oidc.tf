@@ -32,10 +32,14 @@ resource "aws_iam_role" "github_actions" {
       Condition = {
         StringEquals = { "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com" }
         StringLike = {
-          "token.actions.githubusercontent.com:sub" = [
-            "repo:${var.github_repo}:ref:refs/heads/main",
-            "repo:${var.github_repo}:environment:production",
-          ]
+          # GitHub sends either the classic subject (repo:owner/repo:...) or, for newer repositories,
+          # the immutable one with numeric IDs (repo:owner@id/repo@id:...). Accept both.
+          "token.actions.githubusercontent.com:sub" = flatten([
+            for r in compact([var.github_repo, var.github_repo_immutable]) : [
+              "repo:${r}:ref:refs/heads/main",
+              "repo:${r}:environment:production",
+            ]
+          ])
         }
       }
     }]

@@ -22,4 +22,5 @@ node_disk_size_gb       = 20
 
 # GitHub repository allowed to deploy through OIDC (no AWS keys in GitHub)
 github_repo                 = "Parv-0210/fleetpulse-devops-capstone"
+github_repo_immutable       = "Parv-0210@177807718/fleetpulse-devops-capstone@1422312066" # gh api repos/OWNER/REPO/actions/oidc/customization/sub
 create_github_oidc_provider = true # false if this AWS account already has the GitHub OIDC provider

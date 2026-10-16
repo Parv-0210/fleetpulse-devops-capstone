@@ -84,6 +84,12 @@ variable "github_repo" {
   default     = "Parv-0210/fleetpulse-devops-capstone"
 }
 
+variable "github_repo_immutable" {
+  description = "Immutable OIDC subject form owner@ownerId/repo@repoId (see GET /repos/{owner}/{repo}/actions/oidc/customization/sub). Empty to skip."
+  type        = string
+  default     = "Parv-0210@177807718/fleetpulse-devops-capstone@1422312066"
+}
+
 variable "create_github_oidc_provider" {
   description = "Create the GitHub OIDC identity provider. Set false if the account already has one."
   type        = bool
