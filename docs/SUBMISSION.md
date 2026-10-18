@@ -38,7 +38,7 @@ Screenshots live in `docs/screenshots/` (file names below).
 | `backend/Dockerfile` builds | two-stage build (deps venv → slim runtime) |
 | `frontend/Dockerfile` multi-stage | `node:22-alpine` build → `nginxinc/nginx-unprivileged:1.30-alpine-slim` runtime |
 | Non-root users | backend `USER 10001`, frontend `USER nginx` (uid 101); `docker inspect --format '{{.Config.User}}'` |
-| `docker compose up --build` starts 3 services | `docker-compose.yml` with Postgres health-gated startup — `screenshots/05-compose-up.png`, `06-compose-browser.png` |
+| `docker compose up --build` starts 3 services | `docker-compose.yml` with Postgres health-gated startup — `screenshots/05-compose-up.png`, `06-compose-browser.png` (dashboard served at `http://localhost:3000`) |
 
 ## M5 — CI/CD (15)
 
@@ -51,7 +51,7 @@ Screenshots live in `docs/screenshots/` (file names below).
 | Both images built | job `build-scan-push` matrix `[backend, frontend]` with buildx |
 | Pushed to GHCR | `docker/login-action` + `docker/build-push-action` (multi-arch) → `ghcr.io/parv-0210/fleetpulse-*` |
 | Deployment verified in CI | job `kind-smoke`: Helm install on a kind cluster with the pushed SHA images, `helm test`, curl `/health`, `/ready`, `/api/fleet/stats`, `/metrics` |
-| SHA-based tags | `docker/metadata-action` tags `type=sha,format=long` and `sha-<short>`; never `latest` — `screenshots/07-actions-green.png`; tags visible on the GHCR package pages |
+| SHA-based tags | `docker/metadata-action` tags `type=sha,format=long` and `sha-<short>`; never `latest` — `screenshots/07-actions-green.png`; GHCR package pages with `sha-<short>` and full-SHA tags — `screenshots/08-ghcr-backend.png`, `08-ghcr-frontend.png` |
 
 ## M6 — DevSecOps (5)
 
