@@ -285,10 +285,12 @@ monitoring/         Prometheus and Grafana settings and install script
 troubleshooting/    Two deliberately broken manifests for practising debugging
 scripts/            Load test, deploy and minikube helpers
 docs/               Grading checklist, Trivy notes, screenshots
+demo/               Presentation video and slide deck
 ```
 
 ## More documentation
 
+- [demo/](demo/) has the presentation video (MP4) and the slide deck (PDF and PPTX).
 - [docs/SUBMISSION.md](docs/SUBMISSION.md) maps every grading criterion to the file or screenshot that covers it.
 - [docs/TRIVY.md](docs/TRIVY.md) explains what the security scan checks and what I fixed.
 - [troubleshooting/README.md](troubleshooting/README.md) covers the debugging exercises.

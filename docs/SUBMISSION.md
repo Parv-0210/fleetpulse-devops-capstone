@@ -101,3 +101,5 @@ Screenshots live in `docs/screenshots/` (file names below).
 |---|---|
 | Root `README.md` | present |
 | Live demo | `scripts/demo.sh`: commit → pipeline → new image tag → rollout |
+| Presentation video (MP4) | `demo/FleetPulse-Demo.mp4` |
+| Slide deck (PDF / PPTX) | `demo/FleetPulse-Presentation.pdf`, `demo/FleetPulse-Presentation.pptx` |
